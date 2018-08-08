@@ -36,6 +36,28 @@ func (tree *ZBufTree) SetFocus(which int) {
 	tree.GetFocus().Buf = which
 }
 
+func (tree *ZBufTree) Click(zed *ZerzEditor, x1, y1, x2, y2, mx, my int) {
+	if !(x1 <= mx && mx <= x2 && y1 <= my && my <= y2) {
+		// Do nothing
+		return
+	} else if tree.Split {
+		if tree.Hor {
+			chunk := ((x2 - x1) / 2)
+			tree.ChildLT.Click(zed, x1, y1, (x2-1)-chunk, y2, mx, my)
+			tree.ChildRB.Click(zed, (x2-chunk)+1, y1, x2, y2, mx, my)
+		} else {
+			chunk := ((y2 - y1) / 2)
+			tree.ChildLT.Click(zed, x1, y1, x2, (y2-1)-chunk, mx, my)
+			tree.ChildRB.Click(zed, x1, (y2-chunk)+1, x2, y2, mx, my)
+		}
+	} else {
+		if !tree.Focused {
+			tree.SiezeFocus(zed)
+		}
+		zed.Buffers[tree.Buf].Click(x1, y1, mx, my)
+	}
+}
+
 func (tree *ZBufTree) Draw(zed *ZerzEditor, x1, y1, x2, y2 int) {
 	if tree.Split {
 		if tree.Hor {
@@ -76,8 +98,17 @@ func (tree *ZBufTree) GetFocusBufDimensions(x1, y1, x2, y2 int) (bool, int, int,
 	}
 }
 
-// Takes the focus, no-holds-barred. Make sure you clear it from the other tree.
+func (tree *ZBufTree) ClearFocus() {
+	tree.Focused = false
+	if tree.Split {
+		tree.ChildLT.ClearFocus()
+		tree.ChildRB.ClearFocus()
+	}
+}
+
+// Takes the focus, no-holds-barred.
 func (tree *ZBufTree) SiezeFocus(zed *ZerzEditor) {
+	zed.Tree.ClearFocus()
 	tree.Focused = true
 	zed.Buffers[zed.CurBuf].Focused = false
 	zed.CurBuf = tree.Buf
@@ -292,4 +323,8 @@ func (zed *ZerzEditor) KillSplit() {
 	parent.Split = false
 	parent.ChildLT = nil
 	parent.ChildRB = nil
+}
+
+func (zed *ZerzEditor) Click(x1, y1, x2, y2, mx, my int) {
+	zed.Tree.Click(zed, x1, y1, x2, y2, mx, my)
 }

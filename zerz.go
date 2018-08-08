@@ -253,8 +253,7 @@ func zerz(global *ZerzEditor, startupErrors []error) {
 				} else if event.Key == termbox.MouseWheelUp {
 					global.ScrollUp(0, bufareatop, sx, bufareabot)
 				} else if event.Key == termbox.MouseLeft {
-					// Currently doesn't take splits into account
-					global.FocusBuf().Click(0, bufareatop, event.MouseX, event.MouseY)
+					global.Click(0, bufareatop, sx, bufareabot, event.MouseX, event.MouseY)
 				}
 			}
 		}
