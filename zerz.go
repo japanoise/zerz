@@ -206,7 +206,16 @@ func zerz(global *ZerzEditor, startupErrors []error) {
 					if global.FocusBuf().IntWidth < Int64 {
 						global.FocusBuf().IntWidth++
 					}
-				case 'c', 'C':
+				case 'A':
+					// alt+arrows give ABCD on my term, and zerz is modal, so why not :)
+					global.SplitUp()
+				case 'B':
+					global.SplitDown()
+				case 'D':
+					global.SplitLeft()
+				case 'C':
+					global.SplitRight()
+				case 'c':
 					global.FocusBuf().Mode = ModeChar
 				case 'p', 'P':
 					global.FocusBuf().Mode = ModePattern
