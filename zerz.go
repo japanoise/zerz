@@ -185,6 +185,14 @@ func zerz(global *ZerzEditor, startupErrors []error) {
 					global.VSplit()
 				case '|':
 					global.HSplit()
+				case 'u', 'U':
+					global.SplitUp()
+				case 'd', 'D':
+					global.SplitDown()
+				case 'l', 'L':
+					global.SplitLeft()
+				case 'r', 'R':
+					global.SplitRight()
 				}
 			} else {
 				switch event.Ch {

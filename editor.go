@@ -14,6 +14,7 @@ type ZBufTree struct {
 	Buf     int
 	ChildLT *ZBufTree
 	ChildRB *ZBufTree
+	Parent  *ZBufTree
 }
 
 func (tree *ZBufTree) GetFocus() *ZBufTree {
@@ -75,6 +76,28 @@ func (tree *ZBufTree) GetFocusBufDimensions(x1, y1, x2, y2 int) (bool, int, int,
 	}
 }
 
+func (tree *ZBufTree) SetFocusToTopMost(zed *ZerzEditor) {
+	if !tree.Split {
+		tree.Focused = true
+		zed.Buffers[zed.CurBuf].Focused = false
+		zed.CurBuf = tree.Buf
+		zed.Buffers[zed.CurBuf].Focused = true
+	} else {
+		tree.ChildLT.SetFocusToBotMost(zed)
+	}
+}
+
+func (tree *ZBufTree) SetFocusToBotMost(zed *ZerzEditor) {
+	if !tree.Split {
+		tree.Focused = true
+		zed.Buffers[zed.CurBuf].Focused = false
+		zed.CurBuf = tree.Buf
+		zed.Buffers[zed.CurBuf].Focused = true
+	} else {
+		tree.ChildRB.SetFocusToBotMost(zed)
+	}
+}
+
 type ZerzEditor struct {
 	Buffers []*ZerzBuffer
 	CurBuf  int
@@ -98,7 +121,7 @@ func InitEditor(filenames []string) (*ZerzEditor, []error) {
 		buffers[0].Focused = true
 	}
 
-	return &ZerzEditor{buffers, 0, &ZBufTree{false, false, true, 0, nil, nil}},
+	return &ZerzEditor{buffers, 0, &ZBufTree{false, false, true, 0, nil, nil, nil}},
 		errors
 }
 
@@ -175,14 +198,74 @@ func (zed *ZerzEditor) VSplit() {
 	ftree := zed.Tree.GetFocus()
 	ftree.Split = true
 	ftree.Hor = false
-	ftree.ChildLT = &ZBufTree{false, false, true, ftree.Buf, nil, nil}
-	ftree.ChildRB = &ZBufTree{false, false, false, ftree.Buf, nil, nil}
+	ftree.ChildLT = &ZBufTree{false, false, true, ftree.Buf, nil, nil, ftree}
+	ftree.ChildRB = &ZBufTree{false, false, false, ftree.Buf, nil, nil, ftree}
 }
 
 func (zed *ZerzEditor) HSplit() {
 	ftree := zed.Tree.GetFocus()
 	ftree.Split = true
 	ftree.Hor = true
-	ftree.ChildLT = &ZBufTree{false, false, true, ftree.Buf, nil, nil}
-	ftree.ChildRB = &ZBufTree{false, false, false, ftree.Buf, nil, nil}
+	ftree.ChildLT = &ZBufTree{false, false, true, ftree.Buf, nil, nil, ftree}
+	ftree.ChildRB = &ZBufTree{false, false, false, ftree.Buf, nil, nil, ftree}
+}
+
+func (zed *ZerzEditor) SplitUp() {
+	ftree := zed.Tree.GetFocus()
+	parent := ftree.Parent
+	child := ftree
+	for parent != nil {
+		if !parent.Hor && parent.ChildRB == child {
+			parent.ChildLT.SetFocusToBotMost(zed)
+			ftree.Focused = false
+			return
+		}
+		child = parent
+		parent = parent.Parent
+	}
+}
+
+func (zed *ZerzEditor) SplitDown() {
+	ftree := zed.Tree.GetFocus()
+	parent := ftree.Parent
+	child := ftree
+	for parent != nil {
+		if !parent.Hor && parent.ChildLT == child {
+			parent.ChildRB.SetFocusToTopMost(zed)
+			ftree.Focused = false
+			return
+		}
+		child = parent
+		parent = parent.Parent
+	}
+}
+
+func (zed *ZerzEditor) SplitLeft() {
+	ftree := zed.Tree.GetFocus()
+	parent := ftree.Parent
+	child := ftree
+	for parent != nil {
+		if parent.Hor && parent.ChildRB == child {
+			parent.ChildLT.SetFocusToBotMost(zed)
+			ftree.Focused = false
+			return
+		}
+		child = parent
+		parent = parent.Parent
+	}
+}
+
+func (zed *ZerzEditor) SplitRight() {
+	ftree := zed.Tree.GetFocus()
+	parent := ftree.Parent
+	child := ftree
+	for parent != nil {
+		if parent.Hor && parent.ChildLT == child {
+			parent.ChildRB.SetFocusToTopMost(zed)
+			ftree.Focused = false
+			return
+		}
+		child = parent
+		parent = parent.Parent
+	}
 }
