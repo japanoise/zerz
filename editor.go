@@ -76,12 +76,17 @@ func (tree *ZBufTree) GetFocusBufDimensions(x1, y1, x2, y2 int) (bool, int, int,
 	}
 }
 
+// Takes the focus, no-holds-barred. Make sure you clear it from the other tree.
+func (tree *ZBufTree) SiezeFocus(zed *ZerzEditor) {
+	tree.Focused = true
+	zed.Buffers[zed.CurBuf].Focused = false
+	zed.CurBuf = tree.Buf
+	zed.Buffers[zed.CurBuf].Focused = true
+}
+
 func (tree *ZBufTree) SetFocusToTopMost(zed *ZerzEditor) {
 	if !tree.Split {
-		tree.Focused = true
-		zed.Buffers[zed.CurBuf].Focused = false
-		zed.CurBuf = tree.Buf
-		zed.Buffers[zed.CurBuf].Focused = true
+		tree.SiezeFocus(zed)
 	} else {
 		tree.ChildLT.SetFocusToBotMost(zed)
 	}
@@ -89,10 +94,7 @@ func (tree *ZBufTree) SetFocusToTopMost(zed *ZerzEditor) {
 
 func (tree *ZBufTree) SetFocusToBotMost(zed *ZerzEditor) {
 	if !tree.Split {
-		tree.Focused = true
-		zed.Buffers[zed.CurBuf].Focused = false
-		zed.CurBuf = tree.Buf
-		zed.Buffers[zed.CurBuf].Focused = true
+		tree.SiezeFocus(zed)
 	} else {
 		tree.ChildRB.SetFocusToBotMost(zed)
 	}
@@ -268,4 +270,26 @@ func (zed *ZerzEditor) SplitRight() {
 		child = parent
 		parent = parent.Parent
 	}
+}
+
+func (zed *ZerzEditor) KillSplit() {
+	ftree := zed.Tree.GetFocus()
+	parent := ftree.Parent
+	if parent == nil {
+		// Can't kill if there's no splits!
+		return
+	}
+
+	var child *ZBufTree
+	if parent.ChildLT == ftree {
+		child = parent.ChildRB
+	} else {
+		child = parent.ChildLT
+	}
+
+	parent.Buf = child.Buf
+	parent.SiezeFocus(zed)
+	parent.Split = false
+	parent.ChildLT = nil
+	parent.ChildRB = nil
 }
